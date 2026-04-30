@@ -1,121 +1,163 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { atom, useAtom, useAtomValue } from 'jotai'
+import { create } from 'zustand'
 
-function App() {
-  const [count, setCount] = useState(0)
+// ==================== JOTAI ====================
+
+const bearAtom = atom({
+  bears: 3,
+  foodPerBear: 2,
+  unrelatedCount: 0,
+})
+
+let jotaiDeriveCount = 0
+
+const totalFoodAtom = atom((get) => {
+  jotaiDeriveCount++
+  console.log(`[jotai] computation #${jotaiDeriveCount}`)
+  const s = get(bearAtom)
+  return s.bears * s.foodPerBear
+})
+
+// ==================== ZUSTAND ====================
+
+const useBearStore = create(() => ({
+  bears: 3,
+  foodPerBear: 2,
+  unrelatedCount: 0,
+}))
+
+const useTotalFoodStore = create(() => ({
+  totalFood: 0,
+}))
+
+let zustandSubscribeCount = 0
+
+const computeTotalFood = (state: { bears: number; foodPerBear: number }) => {
+  zustandSubscribeCount++
+  const next = state.bears * state.foodPerBear
+  console.log(
+    `[zustand] computation #${zustandSubscribeCount} | next=${next}, current=${useTotalFoodStore.getState().totalFood}, will setState=${next !== useTotalFoodStore.getState().totalFood}`,
+  )
+  if (next !== useTotalFoodStore.getState().totalFood) {
+    useTotalFoodStore.setState({ totalFood: next })
+  }
+}
+
+computeTotalFood(useBearStore.getState())
+
+useBearStore.subscribe(computeTotalFood)
+
+function JotaiTotalFoodDisplay({ id }: { id: number }) {
+  const totalFood = useAtomValue(totalFoodAtom)
+  console.log(`[jotai] render call site #${id}`)
+
+  return <span>jotai totalFood: {totalFood}</span>
+}
+
+function ZustandTotalFoodDisplay({ id }: { id: number }) {
+  const totalFood = useTotalFoodStore((s) => s.totalFood)
+  console.log(`[zustand] render call site #${id}`)
+
+  return <span>zustand totalFood: {totalFood}</span>
+}
+
+function JotaiPlayground() {
+  const [bear, setBear] = useAtom(bearAtom)
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
+    <section style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 24, margin: 16 }}>
+      <h2>Jotai</h2>
+
+      <p>
+        bears: {bear.bears}{' '}
+        <button onClick={() => setBear((p) => ({ ...p, bears: p.bears + 1 }))}>+1</button>
+        <button onClick={() => setBear((p) => ({ ...p, bears: p.bears - 1 }))}>-1</button>
+      </p>
+
+      <p>
+        foodPerBear: {bear.foodPerBear}{' '}
+        <button onClick={() => setBear((p) => ({ ...p, foodPerBear: p.foodPerBear + 1 }))}>
+          +1
         </button>
-      </section>
+        <button onClick={() => setBear((p) => ({ ...p, foodPerBear: p.foodPerBear - 1 }))}>
+          -1
+        </button>
+      </p>
 
-      <div className="ticks"></div>
+      <p>
+        unrelatedCount: {bear.unrelatedCount}{' '}
+        <button onClick={() => setBear((p) => ({ ...p, unrelatedCount: p.unrelatedCount + 1 }))}>
+          +1
+        </button>
+      </p>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      <p>
+        <strong><JotaiTotalFoodDisplay id={1} /></strong>
+      </p>
+      <p>
+        <strong><JotaiTotalFoodDisplay id={2} /></strong>
+      </p>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    </section>
+  )
+}
+
+function ZustandPlayground() {
+  const { bears, foodPerBear, unrelatedCount } = useBearStore()
+
+  return (
+    <section style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 24, margin: 16 }}>
+      <h2>Zustand</h2>
+
+      <p>
+        bears: {bears}{' '}
+        <button onClick={() => useBearStore.setState((s) => ({ bears: s.bears + 1 }))}>+1</button>
+        <button onClick={() => useBearStore.setState((s) => ({ bears: s.bears - 1 }))}>-1</button>
+      </p>
+
+      <p>
+        foodPerBear: {foodPerBear}{' '}
+        <button onClick={() => useBearStore.setState((s) => ({ foodPerBear: s.foodPerBear + 1 }))}>
+          +1
+        </button>
+        <button onClick={() => useBearStore.setState((s) => ({ foodPerBear: s.foodPerBear - 1 }))}>
+          -1
+        </button>
+      </p>
+
+      <p>
+        unrelatedCount: {unrelatedCount}{' '}
+        <button
+          onClick={() => useBearStore.setState((s) => ({ unrelatedCount: s.unrelatedCount + 1 }))}
+        >
+          +1
+        </button>
+      </p>
+
+      <p>
+        <strong><ZustandTotalFoodDisplay id={1} /></strong>
+      </p>
+      <p>
+        <strong><ZustandTotalFoodDisplay id={2} /></strong>
+      </p>
+
+    </section>
+  )
+}
+
+function App() {
+  return (
+    <div style={{ padding: 32 }}>
+      <h1>Bears: Jotai vs Zustand</h1>
+      <p style={{ marginBottom: 16 }}>
+        Try changing <code>unrelatedCount</code> — watch the console to see
+        when derivations fire vs when components actually re-render.
+      </p>
+      <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+        <JotaiPlayground />
+        <ZustandPlayground />
+      </div>
+    </div>
   )
 }
 
