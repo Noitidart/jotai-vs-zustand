@@ -1,6 +1,8 @@
+import { shallowEqual } from 'fast-equals';
 import { atom, useAtom, useAtomValue } from 'jotai';
 import { useMemo, useRef } from 'react';
 import { create } from 'zustand';
+import { subscribeWithSelector } from 'zustand/middleware';
 
 // ==================== JOTAI ====================
 
@@ -21,11 +23,13 @@ const totalFoodAtom = atom((get) => {
 
 // ==================== ZUSTAND ====================
 
-const useBearStore = create(() => ({
-  bears: 3,
-  foodPerBear: 2,
-  unrelatedCount: 0
-}));
+const useBearStore = create(
+  subscribeWithSelector(() => ({
+    bears: 3,
+    foodPerBear: 2,
+    unrelatedCount: 0
+  }))
+);
 
 const useTotalFoodStore = create(() => ({
   totalFood: 0
@@ -33,7 +37,10 @@ const useTotalFoodStore = create(() => ({
 
 let zustandSubscribeCount = 0;
 
-const computeTotalFood = (state: { bears: number; foodPerBear: number }) => {
+const computeAndSetTotalFood = (state: {
+  bears: number;
+  foodPerBear: number;
+}) => {
   zustandSubscribeCount++;
   const next = state.bears * state.foodPerBear;
   console.log(
@@ -44,9 +51,27 @@ const computeTotalFood = (state: { bears: number; foodPerBear: number }) => {
   }
 };
 
-computeTotalFood(useBearStore.getState());
+// computeTotalFood(useBearStore.getState());
+// useBearStore.subscribe(computeTotalFood);
 
-useBearStore.subscribe(computeTotalFood);
+let zustandSelectorCount = 0;
+let zustandEqualityFnCount = 0;
+useBearStore.subscribe(
+  function selectStateForTotalFood(s) {
+    zustandSelectorCount++;
+    console.log(`[zstore] selector called #${zustandSelectorCount}`);
+    return { bears: s.bears, foodPerBear: s.foodPerBear };
+  },
+  computeAndSetTotalFood,
+  {
+    equalityFn: function isSelectedStateForTotalFoodEqual(a, b) {
+      zustandEqualityFnCount++;
+      console.log(`[zstore] equalityFn called #${zustandEqualityFnCount}`);
+      return shallowEqual(a, b);
+    },
+    fireImmediately: true
+  }
+);
 
 function JotaiTotalFoodDisplay({ id }: { id: number }) {
   const totalFood = useAtomValue(totalFoodAtom);
