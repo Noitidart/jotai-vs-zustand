@@ -50,7 +50,7 @@ describe('createDerivedStoreWithSelector', () => {
     expect(deriveCount).toBe(2)
   })
 
-  it('supports custom equalityFn on slice', () => {
+  it('supports custom selectorEqualityFn on slice', () => {
     let deriveCount = 0
 
     const source = createStore(() => ({
@@ -69,7 +69,7 @@ describe('createDerivedStoreWithSelector', () => {
         },
       },
       {
-        equalityFn: (a, b) => a.bears === b.bears && a.foodPerBear === b.foodPerBear,
+        selectorEqualityFn: (a, b) => a.bears === b.bears && a.foodPerBear === b.foodPerBear,
       },
     )
 

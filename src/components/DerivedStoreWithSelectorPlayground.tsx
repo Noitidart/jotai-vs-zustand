@@ -21,7 +21,7 @@ const useTotalFoodStore = createDerivedStoreWithSelector(
     derive: (slice) => ({ totalFood: slice.bears * slice.foodPerBear })
   },
   {
-    equalityFn: (a, b) => a.bears === b.bears && a.foodPerBear === b.foodPerBear
+    selectorEqualityFn: (a, b) => a.bears === b.bears && a.foodPerBear === b.foodPerBear
   }
 );
 

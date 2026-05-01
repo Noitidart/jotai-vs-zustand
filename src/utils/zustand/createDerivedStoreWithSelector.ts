@@ -4,12 +4,12 @@ import { type ReadonlyStoreApi } from './types';
 /**
  * Creates a read-only derived store from a source store using a selector.
  *
- * Runs `selector` first, then `equalityFn` compares the selected slice.
+ * Runs `selector` first, then `selectorEqualityFn` compares the selected slice.
  * **The derivation only fires when the slice changes** — making this the
  * most efficient option for expensive computations on stores with frequent
  * unrelated changes.
  *
- * The `equalityFn` defaults to `Object.is`, matching Zustand's
+ * The `selectorEqualityFn` defaults to `Object.is`, matching Zustand's
  * `subscribeWithSelector` middleware.
  *
  * ## Why store-level derivation?
@@ -34,7 +34,7 @@ type DerivedStoreWithSelectorConfig<State, Slice, Derived> = {
 };
 
 type DerivedStoreWithSelectorOptions<Slice> = {
-  equalityFn?: (a: Slice, b: Slice) => boolean;
+  selectorEqualityFn?: (a: Slice, b: Slice) => boolean;
 };
 
 // TODO: delete when copying to prod
@@ -49,7 +49,7 @@ export function createDerivedStoreWithSelector<State, Slice, Derived>(
   options?: DerivedStoreWithSelectorOptions<Slice>
 ): ReadonlyStoreApi<Derived> {
   const { sourceStore, selector, derive } = config;
-  const equalityFn = options?.equalityFn ?? Object.is;
+  const selectorEqualityFn = options?.selectorEqualityFn ?? Object.is;
 
   // TODO: delete when copying to prod
   selectorCount++;
@@ -79,7 +79,7 @@ export function createDerivedStoreWithSelector<State, Slice, Derived>(
     // TODO: delete when copying to prod
     console.log(`[derived-sws] equalityFn #${equalityFnCount}`);
 
-    if (!equalityFn(nextSlice, currentSlice)) {
+    if (!selectorEqualityFn(nextSlice, currentSlice)) {
       currentSlice = nextSlice;
 
       // TODO: delete when copying to prod

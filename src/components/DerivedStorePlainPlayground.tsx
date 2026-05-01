@@ -20,7 +20,7 @@ const useTotalFoodStore = createDerivedStore(
     derive: (s) => ({ totalFood: s.bears * s.foodPerBear })
   },
   {
-    equalityFn: (a, b) => a.totalFood === b.totalFood
+    deriveEqualityFn: (a, b) => a.totalFood === b.totalFood
   }
 );
 

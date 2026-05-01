@@ -4,10 +4,10 @@ import { type ReadonlyStoreApi } from './types';
 /**
  * Creates a read-only derived store from a source store.
  *
- * Runs `derive` on every source store change. The `equalityFn` compares
+ * Runs `derive` on every source store change. The `deriveEqualityFn` compares
  * the new and previous derived output — if equal, setState is skipped.
  *
- * The `equalityFn` defaults to `Object.is`, matching Zustand's
+ * The `deriveEqualityFn` defaults to `Object.is`, matching Zustand's
  * `subscribeWithSelector` middleware.
  *
  * ## Why store-level derivation?
@@ -31,7 +31,7 @@ type DerivedStoreConfig<State, Derived> = {
 };
 
 type DerivedStoreOptions<Derived> = {
-  equalityFn?: (a: Derived, b: Derived) => boolean;
+  deriveEqualityFn?: (a: Derived, b: Derived) => boolean;
 };
 
 // TODO: delete when copying to prod
@@ -42,7 +42,7 @@ export function createDerivedStore<State, Derived>(
   options?: DerivedStoreOptions<Derived>
 ): ReadonlyStoreApi<Derived> {
   const { sourceStore, derive } = config;
-  const equalityFn = options?.equalityFn ?? Object.is;
+  const deriveEqualityFn = options?.deriveEqualityFn ?? Object.is;
 
   // TODO: delete when copying to prod
   computeCount++;
@@ -61,7 +61,7 @@ export function createDerivedStore<State, Derived>(
     const next = derive(state);
     const current = api.getState();
 
-    if (!equalityFn(next, current)) {
+    if (!deriveEqualityFn(next, current)) {
       setState(next, true);
     }
   });

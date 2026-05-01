@@ -60,7 +60,7 @@ describe('createDerivedStore', () => {
     expect(useTotalFood.getState()).toBe(6);
   });
 
-  it('supports custom equalityFn on output', () => {
+  it('supports custom deriveEqualityFn on output', () => {
     const source = createStore(() => ({ items: ['a', 'b'] as string[] }));
     const useItems = createDerivedStore(
       {
@@ -68,7 +68,7 @@ describe('createDerivedStore', () => {
         derive: (s) => s.items
       },
       {
-        equalityFn: (a, b) => a.length === b.length
+        deriveEqualityFn: (a, b) => a.length === b.length
       }
     );
 
