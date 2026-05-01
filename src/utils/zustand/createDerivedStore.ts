@@ -4,11 +4,19 @@ import { type ReadonlyStoreApi } from './types';
 /**
  * Creates a read-only derived store from a source store.
  *
- * Runs `derive` on every source store change. The `deriveEqualityFn` compares
- * the new and previous derived output — if equal, setState is skipped.
+ * Prevents unnecessary re-renders — `derive` runs on every source store change,
+ * but `setState` is gated by `deriveEqualityFn` (defaults to `Object.is`).
  *
- * The `deriveEqualityFn` defaults to `Object.is`, matching Zustand's
- * `subscribeWithSelector` middleware.
+ * **Note:** This runs `derive` on every source store change, even unrelated ones.
+ * The `deriveEqualityFn` only gates whether `setState` fires (preventing
+ * unnecessary re-renders). If you also need to skip the computation entirely on
+ * unrelated changes, use `createDerivedStoreWithSelector` instead.
+ *
+ * ## When to use
+ *
+ * Use when the source store is focused (only related keys) — every change
+ * is meaningful, so there's no wasted computation. This is the normal/default
+ * behavior (same as Jotai's derived atoms).
  *
  * ## Why store-level derivation?
  *
@@ -19,10 +27,11 @@ import { type ReadonlyStoreApi } from './types';
  *
  * These utilities move the derivation **to the store level** — computation
  * runs once regardless of how many components read the result. Components
- * simply `useDerivedStore(s => s)` with zero per-site cost.
+ * simply `useDerivedStore()` with zero per-site cost.
  *
  * @see https://zustand.docs.pmnd.rs/learn/guides/beginner-typescript#multiple-selectors
  * @see https://zustand.docs.pmnd.rs/learn/guides/beginner-typescript#derived-state-with-selectors
+ * @see createDerivedStoreWithSelector — also prevents unnecessary re-computation
  */
 
 type DerivedStoreConfig<State, Derived> = {
