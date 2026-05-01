@@ -61,6 +61,10 @@ function bindUseStore<T>(
   });
 }
 
+let selectorCount = 0;
+let equalityFnCount = 0;
+let computeCount = 0;
+
 export function createDerivedStoreWithSelector<State, Slice, Derived>(
   config: DerivedStoreWithSelectorConfig<State, Slice, Derived>,
   options?: DerivedStoreWithSelectorOptions<Slice>
@@ -68,16 +72,30 @@ export function createDerivedStoreWithSelector<State, Slice, Derived>(
   const { sourceStore, selector, derive } = config;
   const equalityFn = options?.equalityFn ?? Object.is;
 
+  selectorCount++;
+  console.log(`[derived-sws] selector #${selectorCount}`);
   let currentSlice = selector(sourceStore.getState());
+
+  computeCount++;
+  console.log(`[derived-sws] computation #${computeCount}`);
   const initialValue = derive(currentSlice);
 
   const api = createStore<Derived>(() => initialValue);
 
   sourceStore.subscribe((state) => {
+    selectorCount++;
+    console.log(`[derived-sws] selector #${selectorCount}`);
+
     const nextSlice = selector(state);
+
+    equalityFnCount++;
+    console.log(`[derived-sws] equalityFn #${equalityFnCount}`);
 
     if (!equalityFn(nextSlice, currentSlice)) {
       currentSlice = nextSlice;
+
+      computeCount++;
+      console.log(`[derived-sws] computation #${computeCount}`);
       api.setState(derive(nextSlice), true);
     }
   });

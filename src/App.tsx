@@ -2,6 +2,8 @@ import { JotaiPlayground } from './components/JotaiPlayground';
 import { ZustandSelectorPlayground } from './components/ZustandSelectorPlayground';
 import { ZustandStorePlainPlayground } from './components/ZustandStorePlainPlayground';
 import { ZustandStoreSubscribeWithSelectorPlayground } from './components/ZustandStoreSubscribeWithSelectorPlayground';
+import { DerivedStorePlainPlayground } from './components/DerivedStorePlainPlayground';
+import { DerivedStoreWithSelectorPlayground } from './components/DerivedStoreWithSelectorPlayground';
 
 function App() {
   return (
@@ -45,6 +47,8 @@ function App() {
         <ZustandStorePlainPlayground />
         <ZustandStoreSubscribeWithSelectorPlayground />
         <ZustandSelectorPlayground />
+        <DerivedStorePlainPlayground />
+        <DerivedStoreWithSelectorPlayground />
       </div>
     </div>
   );

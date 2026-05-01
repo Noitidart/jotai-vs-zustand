@@ -58,6 +58,8 @@ function bindUseStore<T>(
   });
 }
 
+let computeCount = 0;
+
 export function createDerivedStore<State, Derived>(
   config: DerivedStoreConfig<State, Derived>,
   options?: DerivedStoreOptions<Derived>
@@ -65,11 +67,15 @@ export function createDerivedStore<State, Derived>(
   const { sourceStore, derive } = config;
   const equalityFn = options?.equalityFn ?? Object.is;
 
+  computeCount++;
+  console.log(`[derived-plain] computation #${computeCount}`);
   const initialValue = derive(sourceStore.getState());
 
   const api = createStore<Derived>(() => initialValue);
 
   sourceStore.subscribe((state) => {
+    computeCount++;
+    console.log(`[derived-plain] computation #${computeCount}`);
     const next = derive(state);
     const current = api.getState();
 
