@@ -74,11 +74,11 @@ npm test      # run automated tests (vitest)
 
 3. **zselector multiplies work by N call sites.** Every computation runs independently at each `useStore(selector)` call site. With 2 sites and `useSyncExternalStore` verification passes, a single related click causes 14 computations (7 per site).
 
-4. **zstore-plain and zstore-sws share the computation.** The subscribe pattern runs once regardless of how many consumers read the derived store.
+4. **zstore-plain and zstore-sws share the computation, making both optimal for expensive computations with many consumers.** The subscribe pattern runs once regardless of how many consumers read the derived store.
 
 5. **All 4 approaches correctly skip re-renders on unrelated changes.** The difference is *how much work they do before deciding to skip*:
    - zstore-sws: selector + equalityFn → computation skipped entirely
    - Jotai/zstore-plain: computation runs → result unchanged → re-render skipped
    - zselector: computation runs at every call site → `Object.is` comparison → re-render skipped
 
-6. **For expensive computations with many consumers, subscribeWithSelector is optimal.** It prevents the computation from even running. For cheap computations with few consumers, the difference is negligible.
+6. **Use zstore-sws over zstore-plain only when you have a complex store and only need a subset of its keys.** This allows subscribeWithSelector to skip the computation entirely on unrelated changes. Otherwise, zstore-plain is simpler and equally performant.
