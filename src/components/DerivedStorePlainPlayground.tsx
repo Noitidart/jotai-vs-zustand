@@ -1,5 +1,5 @@
-import { create } from 'zustand';
 import { useEffect } from 'react';
+import { create } from 'zustand';
 import { createDerivedStore } from '../utils/zustand/createDerivedStore';
 
 type BearStore = {
@@ -14,13 +14,18 @@ const useBearStore = create<BearStore>(() => ({
   unrelatedCount: 0
 }));
 
-const useTotalFoodStore = createDerivedStore({
-  sourceStore: useBearStore,
-  derive: (s) => ({ totalFood: s.bears * s.foodPerBear }),
-});
+const useTotalFoodStore = createDerivedStore(
+  {
+    sourceStore: useBearStore,
+    derive: (s) => ({ totalFood: s.bears * s.foodPerBear })
+  },
+  {
+    equalityFn: (a, b) => a.totalFood === b.totalFood
+  }
+);
 
 function TotalFoodDisplay({ id }: { id: number }) {
-  const totalFood = useTotalFoodStore((s) => s.totalFood);
+  const { totalFood } = useTotalFoodStore();
   console.log(`[derived-plain] render call site #${id}`);
 
   return <span>totalFood: {totalFood}</span>;

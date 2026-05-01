@@ -1,5 +1,5 @@
-import { create } from 'zustand';
 import { useEffect } from 'react';
+import { create } from 'zustand';
 
 type BearStore = {
   bears: number;
@@ -36,7 +36,7 @@ computeAndMaybeSetTotalFood(useBearStore.getState());
 useBearStore.subscribe(computeAndMaybeSetTotalFood);
 
 function TotalFoodDisplay({ id }: { id: number }) {
-  const totalFood = useTotalFoodStore((s) => s.totalFood);
+  const { totalFood } = useTotalFoodStore();
   console.log(`[zstore-plain] render call site #${id}`);
 
   return <span>totalFood: {totalFood}</span>;

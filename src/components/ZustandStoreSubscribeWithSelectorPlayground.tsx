@@ -1,6 +1,6 @@
+import { useEffect } from 'react';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import { useEffect } from 'react';
 
 type BearStore = {
   bears: number;
@@ -52,7 +52,7 @@ useBearStore.subscribe(
 );
 
 function TotalFoodDisplay({ id }: { id: number }) {
-  const totalFood = useTotalFoodStore((s) => s.totalFood);
+  const { totalFood } = useTotalFoodStore();
   console.log(`[zstore-sws] render call site #${id}`);
 
   return <span>totalFood: {totalFood}</span>;

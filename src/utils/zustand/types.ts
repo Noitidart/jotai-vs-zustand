@@ -1,3 +1,8 @@
-import { type StoreApi, type UseBoundStore } from 'zustand';
+import { type StoreApi } from 'zustand';
 
-export type ReadonlyStoreApi<T> = Omit<UseBoundStore<StoreApi<T>>, 'setState'>;
+export type ReadonlyStoreApi<T> = {
+  (): T;
+  getState: StoreApi<T>['getState'];
+  getInitialState: StoreApi<T>['getInitialState'];
+  subscribe: StoreApi<T>['subscribe'];
+};
