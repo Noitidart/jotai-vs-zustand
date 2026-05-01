@@ -34,6 +34,7 @@ type DerivedStoreOptions<Derived> = {
   equalityFn?: (a: Derived, b: Derived) => boolean;
 };
 
+// TODO: delete when copying to prod
 let computeCount = 0;
 
 export function createDerivedStore<State, Derived>(
@@ -43,7 +44,9 @@ export function createDerivedStore<State, Derived>(
   const { sourceStore, derive } = config;
   const equalityFn = options?.equalityFn ?? Object.is;
 
+  // TODO: delete when copying to prod
   computeCount++;
+  // TODO: delete when copying to prod
   console.log(`[derived-plain] computation #${computeCount}`);
   const initialValue = derive(sourceStore.getState());
 
@@ -51,7 +54,9 @@ export function createDerivedStore<State, Derived>(
   const { setState } = api;
 
   sourceStore.subscribe((state) => {
+    // TODO: delete when copying to prod
     computeCount++;
+    // TODO: delete when copying to prod
     console.log(`[derived-plain] computation #${computeCount}`);
     const next = derive(state);
     const current = api.getState();
