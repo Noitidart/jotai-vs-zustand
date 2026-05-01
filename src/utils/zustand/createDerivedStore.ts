@@ -1,14 +1,5 @@
-import {
-  createStore,
-  type StoreApi,
-  type UseBoundStore,
-  useStore
-} from 'zustand';
-
-type ReadonlyStoreApi<T> = Pick<
-  StoreApi<T>,
-  'getState' | 'getInitialState' | 'subscribe'
->;
+import { type StoreApi, create } from 'zustand';
+import { type ReadonlyStoreApi } from './types';
 
 /**
  * Creates a read-only derived store from a source store.
@@ -43,27 +34,12 @@ type DerivedStoreOptions<Derived> = {
   equalityFn?: (a: Derived, b: Derived) => boolean;
 };
 
-function bindUseStore<T>(
-  api: ReadonlyStoreApi<T>
-): UseBoundStore<ReadonlyStoreApi<T>> {
-  const bound = ((selector?: (state: T) => unknown) =>
-    selector ? useStore(api, selector) : useStore(api)) as UseBoundStore<
-    ReadonlyStoreApi<T>
-  >;
-
-  return Object.assign(bound, {
-    getState: api.getState,
-    getInitialState: api.getInitialState,
-    subscribe: api.subscribe
-  });
-}
-
 let computeCount = 0;
 
 export function createDerivedStore<State, Derived>(
   config: DerivedStoreConfig<State, Derived>,
   options?: DerivedStoreOptions<Derived>
-): UseBoundStore<ReadonlyStoreApi<Derived>> {
+): ReadonlyStoreApi<Derived> {
   const { sourceStore, derive } = config;
   const equalityFn = options?.equalityFn ?? Object.is;
 
@@ -71,7 +47,8 @@ export function createDerivedStore<State, Derived>(
   console.log(`[derived-plain] computation #${computeCount}`);
   const initialValue = derive(sourceStore.getState());
 
-  const api = createStore<Derived>(() => initialValue);
+  const api = create<Derived>(() => initialValue);
+  const { setState } = api;
 
   sourceStore.subscribe((state) => {
     computeCount++;
@@ -80,9 +57,11 @@ export function createDerivedStore<State, Derived>(
     const current = api.getState();
 
     if (!equalityFn(next, current)) {
-      api.setState(next, true);
+      setState(next, true);
     }
   });
 
-  return bindUseStore(api);
+  // Standard TS pattern to delete a property from typed objects
+  delete (api as unknown as Record<string, unknown>).setState;
+  return api as ReadonlyStoreApi<Derived>;
 }

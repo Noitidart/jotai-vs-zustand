@@ -1,14 +1,5 @@
-import {
-  createStore,
-  type StoreApi,
-  type UseBoundStore,
-  useStore
-} from 'zustand';
-
-type ReadonlyStoreApi<T> = Pick<
-  StoreApi<T>,
-  'getState' | 'getInitialState' | 'subscribe'
->;
+import { type StoreApi, create } from 'zustand';
+import { type ReadonlyStoreApi } from './types';
 
 /**
  * Creates a read-only derived store from a source store using a selector.
@@ -46,21 +37,6 @@ type DerivedStoreWithSelectorOptions<Slice> = {
   equalityFn?: (a: Slice, b: Slice) => boolean;
 };
 
-function bindUseStore<T>(
-  api: ReadonlyStoreApi<T>
-): UseBoundStore<ReadonlyStoreApi<T>> {
-  const bound = ((selector?: (state: T) => unknown) =>
-    selector ? useStore(api, selector) : useStore(api)) as UseBoundStore<
-    ReadonlyStoreApi<T>
-  >;
-
-  return Object.assign(bound, {
-    getState: api.getState,
-    getInitialState: api.getInitialState,
-    subscribe: api.subscribe
-  });
-}
-
 let selectorCount = 0;
 let equalityFnCount = 0;
 let computeCount = 0;
@@ -68,7 +44,7 @@ let computeCount = 0;
 export function createDerivedStoreWithSelector<State, Slice, Derived>(
   config: DerivedStoreWithSelectorConfig<State, Slice, Derived>,
   options?: DerivedStoreWithSelectorOptions<Slice>
-): UseBoundStore<ReadonlyStoreApi<Derived>> {
+): ReadonlyStoreApi<Derived> {
   const { sourceStore, selector, derive } = config;
   const equalityFn = options?.equalityFn ?? Object.is;
 
@@ -80,7 +56,8 @@ export function createDerivedStoreWithSelector<State, Slice, Derived>(
   console.log(`[derived-sws] computation #${computeCount}`);
   const initialValue = derive(currentSlice);
 
-  const api = createStore<Derived>(() => initialValue);
+  const api = create<Derived>(() => initialValue);
+  const { setState } = api;
 
   sourceStore.subscribe((state) => {
     selectorCount++;
@@ -96,9 +73,10 @@ export function createDerivedStoreWithSelector<State, Slice, Derived>(
 
       computeCount++;
       console.log(`[derived-sws] computation #${computeCount}`);
-      api.setState(derive(nextSlice), true);
+      setState(derive(nextSlice), true);
     }
   });
 
-  return bindUseStore(api);
+  delete (api as unknown as Record<string, unknown>).setState;
+  return api as ReadonlyStoreApi<Derived>;
 }
