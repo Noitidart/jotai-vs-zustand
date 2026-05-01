@@ -18,6 +18,22 @@ import { type ReadonlyStoreApi } from './types';
  * frequently) and the computation is expensive. The selector gate skips
  * both the computation and the setState call when only unrelated keys change.
  *
+ * ## Why not merge with `createDerivedStore`?
+ *
+ * These are separate functions because the logic path is fundamentally different:
+ *
+ * - **This function** (with selector): gates BEFORE computation — selector runs
+ *   first, `selectorEqualityFn` compares against cached `currentSlice`, and derive
+ *   only fires if the slice changed. Requires an extra `currentSlice` cache, but
+ *   skips expensive computation on unrelated changes.
+ *
+ * - **`createDerivedStore`**: gates AFTER computation — derive always runs,
+ *   then `deriveEqualityFn` decides whether to setState. One gate, no extra cache.
+ *
+ * While the caches wouldn't overlap (each branch has its own), merging would mean
+ * two different code paths inside one function. Keeping them separate makes each
+ * function's gate and purpose immediately clear at the call site.
+ *
  * ## Why store-level derivation?
  *
  * Zustand's `useStore(selector)` runs the selector at **every call site**.

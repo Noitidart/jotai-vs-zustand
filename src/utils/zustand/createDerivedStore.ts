@@ -18,6 +18,21 @@ import { type ReadonlyStoreApi } from './types';
  * is meaningful, so there's no wasted computation. This is the normal/default
  * behavior (same as Jotai's derived atoms).
  *
+ * ## Why not merge with `createDerivedStoreWithSelector`?
+ *
+ * These are separate functions because the logic path is fundamentally different:
+ *
+ * - **This function** (no selector): gates AFTER computation — derive always runs,
+ *   then `deriveEqualityFn` decides whether to setState. One gate, no extra cache.
+ *
+ * - **`createDerivedStoreWithSelector`**: gates BEFORE computation — selector runs
+ *   first, `selectorEqualityFn` compares against cached slice, and derive only
+ *   runs if the slice changed. Requires an extra `currentSlice` cache.
+ *
+ * While the caches wouldn't overlap (each branch has its own), merging would mean
+ * two different code paths inside one function. Keeping them separate makes each
+ * function's gate and purpose immediately clear at the call site.
+ *
  * ## Why store-level derivation?
  *
  * Zustand's `useStore(selector)` runs the selector at **every call site**.
