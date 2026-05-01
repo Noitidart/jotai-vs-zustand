@@ -1,75 +1,84 @@
-# React + TypeScript + Vite
+# Bears: Jotai vs Zustand
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A playground comparing 4 approaches to derived state across Jotai and Zustand.
 
-Currently, two official plugins are available:
+## Running
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm dev       # start the app
+npm test      # run automated tests (vitest)
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## The 4 Approaches
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Approach | How derivation works |
+|---|---|
+| **Jotai** | `atom((get) => ...)` — derived atom reads parent on every change |
+| **Zustand store (plain)** | `subscribe(callback)` — runs computation on every store change, writes to a second store |
+| **Zustand store (subscribeWithSelector)** | `subscribe(selector, listener, { equalityFn })` — selector+equalityFn pipeline gates the listener |
+| **Zustand selector** | `useStore(selector)` — runs computation at each call site via `useSyncExternalStore` |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Manual Testing
+
+1. Open DevTools console
+2. Reload the page — note the mount logs
+3. Click **unrelatedCount +1** — did the computation fire? did the display re-render?
+4. Reload the page, then click **bears +1** — computation fires, display re-renders
+5. Repeat for each playground and compare
+
+## Automated Tests
+
+3 scenarios per playground (12 tests total), each capturing `console.log` output:
+
+- **Mount only** — observe mount-phase behavior
+- **Mount + click unrelatedCount** — does unrelated state change trigger unnecessary work?
+- **Mount + click bears** — does related state change correctly propagate?
+
+## Results
+
+### Mount Only
+
+| Metric | Jotai | zstore-plain | zstore-sws | zselector |
+|---|---|---|---|---|
+| Computations | 1 | 1 | 1 | 6 (3/site) |
+| Selector calls | — | — | 1 | — |
+| EqualityFn calls | — | — | 0 | — |
+| Renders per site | 2 | 1 | 1 | 1 |
+| Post-mount re-renders | Yes (+2) | No | No | No |
+
+### +1 Unrelated Click (on top of mount)
+
+| Metric | Jotai | zstore-plain | zstore-sws | zselector |
+|---|---|---|---|---|
+| Extra computations | +1 | +1 | **+0** | +2 (1/site) |
+| Extra selector calls | — | — | +1 | — |
+| Extra equalityFn calls | — | — | +1 | — |
+| Extra renders | 0 | 0 | 0 | 0 |
+| **Computation skipped?** | **No** | **No** | **Yes** | **No** |
+
+### +1 Related Click (bears, on top of mount)
+
+| Metric | Jotai | zstore-plain | zstore-sws | zselector |
+|---|---|---|---|---|
+| Extra computations | +1 | +1 | +1 | +8 (4/site) |
+| Extra selector calls | — | — | +1 | — |
+| Extra equalityFn calls | — | — | +1 | — |
+| Extra renders per site | +1 | +1 | +1 | +1 |
+
+## Key Learnings
+
+1. **subscribeWithSelector is the only approach that skips the computation entirely on unrelated changes.** Jotai, zstore-plain, and zselector all run the computation — they just gate the re-render afterward.
+
+2. **Jotai has extra post-mount renders.** It renders each site twice after `mounted` (total 2 per site vs 1 for all others). This is Jotai's `useAtom`/`useAtomValue` triggering additional subscription verification.
+
+3. **zselector multiplies work by N call sites.** Every computation runs independently at each `useStore(selector)` call site. With 2 sites and `useSyncExternalStore` verification passes, a single related click causes 14 computations (7 per site).
+
+4. **zstore-plain and zstore-sws share the computation.** The subscribe pattern runs once regardless of how many consumers read the derived store.
+
+5. **All 4 approaches correctly skip re-renders on unrelated changes.** The difference is *how much work they do before deciding to skip*:
+   - zstore-sws: selector + equalityFn → computation skipped entirely
+   - Jotai/zstore-plain: computation runs → result unchanged → re-render skipped
+   - zselector: computation runs at every call site → `Object.is` comparison → re-render skipped
+
+6. **For expensive computations with many consumers, subscribeWithSelector is optimal.** It prevents the computation from even running. For cheap computations with few consumers, the difference is negligible.
